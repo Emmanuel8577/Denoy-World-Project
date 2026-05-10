@@ -1,15 +1,14 @@
 import axios from 'axios';
 
 const instance = axios.create({
-    // Use the Render URL if available, otherwise fallback to localhost for development
     baseURL: import.meta.env.VITE_BACKEND_URL 
         ? `${import.meta.env.VITE_BACKEND_URL}/api` 
         : 'http://localhost:4000/api',
 });
 
-// Automatically attach the token to every request
+// Admin Interceptor
 instance.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('adminToken'); // Using adminToken specifically
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }

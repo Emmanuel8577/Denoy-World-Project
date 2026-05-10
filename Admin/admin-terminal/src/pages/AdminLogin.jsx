@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+// 1. Import your admin axios instance
+import axiosInstance from '../api/axiosInstance'; 
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, ShieldCheck } from 'lucide-react';
 
@@ -11,19 +12,21 @@ const AdminLogin = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            // Adjust the URL to your specific backend port (e.g., 4000)
-            const { data } = await axios.post('http://localhost:4000/api/user/login', { email, password });
+            // 2. Use the instance and a relative path
+            const { data } = await axiosInstance.post('/user/login', { email, password });
             
             if (data.role === 'admin') {
                 localStorage.setItem('adminToken', data.token);
-                // Force a reload or navigate to the dashboard
-                window.location.href = '/'; 
+                // 3. Using navigate is cleaner than window.location.href 
+                // but window.location.href works if you want a full state reset
+                navigate('/'); 
             } else {
                 alert("Access Denied: You do not have Administrative privileges.");
             }
         } catch (err) {
             console.error(err);
-            alert("Login Failed: Please check your credentials.");
+            const msg = err.response?.data?.message || "Login Failed: Please check your credentials.";
+            alert(msg);
         }
     };
 

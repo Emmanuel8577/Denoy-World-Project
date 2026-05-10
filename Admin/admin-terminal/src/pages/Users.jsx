@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+// 1. Switch to your custom admin instance
+import axiosInstance from "../api/axiosInstance"; 
 import { 
   Mail, 
   FileUp, 
@@ -22,12 +23,10 @@ const Users = () => {
   const [expandedUser, setExpandedUser] = useState(null);
 
   const fetchUsers = async () => {
-    const token = localStorage.getItem("adminToken");
     try {
       setLoading(true);
-      const { data } = await axios.get("http://localhost:4000/api/admin/all-users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // 2. No manual token or full URL needed
+      const { data } = await axiosInstance.get("/admin/all-users");
       if (data.success) {
         setUsers(data.users);
         setError(null);
@@ -43,15 +42,15 @@ const Users = () => {
 
   const handleDeliver = async (projectId, file) => {
     if (!file) return;
-    const token = localStorage.getItem("adminToken");
     const formData = new FormData();
     formData.append("file", file);
     formData.append("projectId", projectId);
 
     try {
       setUploadingId(projectId);
-      const { data } = await axios.post("http://localhost:4000/api/admin/upload-completed", formData, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
+      // 3. Simplified post request
+      const { data } = await axiosInstance.post("/admin/upload-completed", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       if (data.success) {
         alert("File successfully delivered to user inbox!");

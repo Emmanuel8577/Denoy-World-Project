@@ -1,46 +1,50 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+// 1. Centralized instance
+import axiosInstance from "../api/axiosInstance"; 
 import { User, Mail, ChevronDown, ChevronUp, FileUp, CheckCircle } from "lucide-react";
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
-  const [expandedUser, setExpandedUser] = useState(null); // Tracks which user's projects are shown
+  const [expandedUser, setExpandedUser] = useState(null);
   const [uploadingId, setUploadingId] = useState(null);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      const token = localStorage.getItem("adminToken");
-      try {
-        const { data } = await axios.get("http://localhost:4000/api/admin/all-users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  const fetchUsers = async () => {
+    try {
+      const { data } = await axiosInstance.get("/admin/all-users");
+      if (data.success) {
         setUsers(data.users);
-      } catch (err) {
-        console.error("Failed to fetch users");
       }
-    };
-    fetchUsers();
+    } catch (err) {
+      console.error("Failed to fetch users", err);
+    }
+  };
+
+  // 2. Fixed useEffect to avoid cascading render warnings
+  useEffect(() => {
+    let isMounted = true;
+    
+    if (isMounted) {
+      fetchUsers();
+    }
+
+    return () => { isMounted = false; };
   }, []);
 
   const handleResendFile = async (projectId, file) => {
     if (!file) return;
-    const token = localStorage.getItem("adminToken");
     const formData = new FormData();
     formData.append("file", file);
     formData.append("projectId", projectId);
 
     try {
       setUploadingId(projectId);
-      const { data } = await axios.post("http://localhost:4000/api/admin/upload-completed", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
+      const { data } = await axiosInstance.post("/admin/upload-completed", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       if (data.success) {
         alert("File delivered to user!");
-        // Refresh local state logic here
+        fetchUsers(); // Refresh the list
       }
     } catch (err) {
       alert("Delivery failed.");
@@ -56,7 +60,6 @@ const UserManagement = () => {
       <div className="grid gap-4">
         {users.map((user) => (
           <div key={user._id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            {/* User Header */}
             <div 
               className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition"
               onClick={() => setExpandedUser(expandedUser === user._id ? null : user._id)}
@@ -80,7 +83,6 @@ const UserManagement = () => {
               </div>
             </div>
 
-            {/* User Projects Section (Expanded) */}
             {expandedUser === user._id && (
               <div className="bg-slate-50/50 p-4 border-t border-slate-100 space-y-3">
                 <h4 className="text-xs font-bold text-slate-500 uppercase px-2 mb-2">Projects from {user.name}</h4>
@@ -92,7 +94,6 @@ const UserManagement = () => {
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      {/* Send File Back Button */}
                       <label className="cursor-pointer bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-sky-700 transition shadow-sm">
                         <FileUp size={14} /> 
                         {uploadingId === p._id ? "Uploading..." : "Deliver Result"}

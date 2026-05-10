@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+// 1. Import your custom instance instead of the raw axios library
+import axiosInstance from '../api/axiosInstance'; 
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles } from 'lucide-react';
@@ -15,21 +16,21 @@ const Auth = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        // Safety check: Prevent double clicks
         if (loading) return;
 
         setLoading(true);
         const endpoint = isLogin ? 'login' : 'register';
         
-        // TIP: Using 127.0.0.1 instead of localhost can fix "hanging" requests in Node/Vite environments
-        const url = `http://127.0.0.1:4000/api/user/${endpoint}`;
+        // 2. We no longer need to manually construct the URL string here!
+        // The instance handles the Base URL (Render or Local) and the "/api" prefix.
+        const path = `/user/${endpoint}`;
 
         try {
             console.log(`Attempting ${endpoint} for:`, formData.email);
             
-            const response = await axios.post(url, formData, {
-                timeout: 5000 // If server doesn't respond in 5s, trigger error
+            // 3. Use axiosInstance.post instead of axios.post
+            const response = await axiosInstance.post(path, formData, {
+                timeout: 8000 // Increased slightly for cold-starts on Render
             });
 
             const data = response.data;
@@ -42,13 +43,11 @@ const Auth = () => {
                 setTimeout(() => navigate('/Profile'), 1000);
             } else {
                 toast.error("Authentication failed: No token received.");
-                setLoading(false);
             }
 
         } catch (err) {
-            console.error("Full Error Object:", err);
+            console.error("Auth Error:", err);
 
-            // Handle the "Seamless Auth" logic you requested
             const errorMessage = err.response?.data?.message?.toLowerCase() || "";
 
             if (isLogin && (errorMessage.includes("not found") || errorMessage.includes("user does not exist"))) {
@@ -58,20 +57,19 @@ const Auth = () => {
                 toast.info("Email already exists. Switching to Login...");
                 setIsLogin(true);
             } else if (err.code === 'ECONNABORTED') {
-                toast.error("Server is taking too long. Is the backend running?");
+                toast.error("Server is taking too long. Render might be 'waking up'—please try again.");
             } else {
                 toast.error(err.response?.data?.message || "Connection error. Check your backend.");
             }
         } finally {
-            // This ensures the button ALWAYS resets even if everything fails
             setLoading(false);
         }
     };
 
+    // ... rest of your return JSX stays exactly the same
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
             <ToastContainer position="top-right" autoClose={3000} />
-
             <motion.div 
                 layout
                 initial={{ opacity: 0, y: 20 }}

@@ -1,24 +1,14 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+// 1. Switch to your custom instance
+import axiosInstance from "../api/axiosInstance"; 
 import { motion } from "framer-motion";
 import { useNavigate, Link } from "react-router-dom";
-// Toastify Imports
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import {
-  Upload,
-  FileText,
-  Eye,
-  Download,
-  Clock,
-  Inbox,
-  FolderOpen,
-  LogOut,
-  Bell,
-  Settings,
-  Home,
-  ChevronRight
+  Upload, FileText, Eye, Download, Clock, Inbox, FolderOpen, 
+  LogOut, Bell, Settings, Home, ChevronRight
 } from "lucide-react";
 
 const UserProfile = () => {
@@ -34,17 +24,16 @@ const UserProfile = () => {
 
   // Fetch Projects Logic
   const fetchMyProjects = async () => {
-    const token = localStorage.getItem("token");
     try {
-      const { data } = await axios.get(
-        "http://localhost:4000/api/projects/user-projects",
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // 2. No need for full URL or manual headers anymore!
+      const { data } = await axiosInstance.get("/projects/user-projects");
       if (data.success) {
         setMyProjects(data.projects);
       }
     } catch (err) {
       console.error("Fetch failed", err);
+      // If unauthorized, redirect to login
+      if (err.response?.status === 401) navigate("/Auth");
     }
   };
 
@@ -54,7 +43,6 @@ const UserProfile = () => {
 
   // Submit Project Logic
   const handleUpload = async () => {
-    const token = localStorage.getItem("token");
     if (!file) return toast.warning("Please select a file first!");
 
     const formData = new FormData();
@@ -64,16 +52,11 @@ const UserProfile = () => {
 
     try {
       setLoading(true);
-      const { data } = await axios.post(
-        "http://localhost:4000/api/projects/upload",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // 3. Instance handles the base URL and Auth token automatically
+      const { data } = await axiosInstance.post("/projects/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      
       if (data.success) {
         setFile(null);
         setInstructions("");
@@ -81,7 +64,8 @@ const UserProfile = () => {
         toast.success("Project submitted successfully! 🚀");
       }
     } catch (err) {
-      toast.error("Upload failed. Please try again.");
+      console.error("Upload Error:", err);
+      toast.error(err.response?.data?.message || "Upload failed. Try again.");
     } finally {
       setLoading(false);
     }
@@ -89,7 +73,9 @@ const UserProfile = () => {
 
   const handleView = (url) => {
     if (!url) return;
-    window.open(url.replace("http://", "https://"), "_blank");
+    // Cloudinary URLs are usually HTTPS, but this keeps it safe
+    const safeUrl = url.startsWith('http://') ? url.replace("http://", "https://") : url;
+    window.open(safeUrl, "_blank");
     toast.info("Opening preview...");
   };
 
@@ -97,8 +83,7 @@ const UserProfile = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Toast Container for Popups */}
-      <ToastContainer position="top-center" autoClose={3000} hideProgressBar={false} />
+      <ToastContainer position="top-center" autoClose={3000} />
 
       {/* --- HORIZONTAL NAVBAR --- */}
       <nav className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
@@ -179,7 +164,6 @@ const UserProfile = () => {
                 </div>
 
                 <div className="space-y-6">
-                  {/* Project Type Switcher */}
                   <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl w-fit">
                     {["document", "image", "audio", "video"].map((t) => (
                       <button
@@ -194,7 +178,6 @@ const UserProfile = () => {
                     ))}
                   </div>
 
-                  {/* File Upload Area */}
                   <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-slate-200 rounded-3xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group">
                     <div className="bg-white p-4 rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform text-blue-600">
                         <Upload size={28} />
@@ -206,7 +189,6 @@ const UserProfile = () => {
                     }} />
                   </label>
 
-                  {/* Instructions */}
                   <div className="space-y-2">
                     <span className="text-xs font-black text-slate-400 uppercase ml-1">Translation Instructions</span>
                     <textarea
@@ -228,7 +210,6 @@ const UserProfile = () => {
               </section>
             </div>
           ) : (
-            /* Inbox View */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {receivedFiles.length === 0 ? (
                 <div className="col-span-full py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200 text-center">
