@@ -1,0 +1,13 @@
+node_modules/
+**/node_modules/
+.env
+**/dist/
+**/build/
+.DS_Store
+# Ignore local uploads
+Backend/uploads/
+**/uploads/
+
+# Ignore lock files (optional but keeps things light)
+package-lock.json
+**/package-lock.json

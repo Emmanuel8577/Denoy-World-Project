@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+/* If you have a separate config file, you must tell Tailwind v4 about it: */
+@config "../tailwind.config.js"
