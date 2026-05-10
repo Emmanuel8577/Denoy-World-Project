@@ -17,10 +17,23 @@ const port = process.env.PORT || 4000;
 ConnectDB();
 ConnectCloudinary();
 
-// Middlewares
+const allowedOrigins = [
+  "https://denoy-connect.vercel.app",        // Your main site
+  "https://denoy-connect-admin.vercel.app",  // Your admin terminal
+  "http://localhost:5173",                   // Local development
+  "http://localhost:3000"
+];
+
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'https://your-frontend-domain.com'], 
-    credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error("CORS policy violation"), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
 }));
 
 app.use(express.json({ limit: '50mb' }));
