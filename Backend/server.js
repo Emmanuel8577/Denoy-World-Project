@@ -17,24 +17,34 @@ const port = process.env.PORT || 4000;
 ConnectDB();
 ConnectCloudinary();
 
+const cors = require('cors');
+
 const allowedOrigins = [
-  "https://denoy-connect.vercel.app",        // Your main site
-  "https://denoy-connect-admin.vercel.app",  // Your admin terminal
-  "http://localhost:5173",                   // Local development
-  "http://localhost:3000"
+  'https://denoy-connect.vercel.app',
+  'https://denoy-connect-admin.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
+    // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error("CORS policy violation"), false);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log("CORS blocked for origin:", origin); // Helps you debug in Render logs
+      callback(new Error('Not allowed by CORS'));
     }
-    return callback(null, true);
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// IMPORTANT: Place this BEFORE your routes
+app.options('*', cors());
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
