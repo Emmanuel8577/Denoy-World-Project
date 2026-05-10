@@ -1,7 +1,7 @@
 import express from 'express';
 import 'dotenv/config.js';
 import cors from 'cors';
-import axios from 'axios'; // Fixed: Changed from require to import
+import axios from 'axios'; 
 import { ConnectDB } from './Config/db.js';
 import ConnectCloudinary from './Config/cloudinary.js';
 
@@ -17,7 +17,7 @@ const port = process.env.PORT || 4000;
 ConnectDB();
 ConnectCloudinary();
 
-const cors = require('cors');
+// 1. REMOVED the "const cors = require('cors')" line that was here
 
 const allowedOrigins = [
   'https://denoy-connect.vercel.app',
@@ -26,15 +26,15 @@ const allowedOrigins = [
   'http://localhost:3000'
 ];
 
+// 2. USE the cors import already declared at the top
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.log("CORS blocked for origin:", origin); // Helps you debug in Render logs
+      console.log("CORS blocked for origin:", origin); 
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -43,7 +43,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// IMPORTANT: Place this BEFORE your routes
 app.options('*', cors());
 
 app.use(express.json({ limit: '50mb' }));
@@ -55,25 +54,20 @@ app.use('/api/projects', projectRouter);
 app.use('/api/contact', contactRouter); 
 app.use('/api/admin', adminRouter);
 
-// Health check endpoint
 app.get("/health-check", (req, res) => {
   res.status(200).send("Server is awake");
 });
 
 app.get('/', (req, res) => res.send("Denyo World API is working"));
 
-// Start Server
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
 
-// --- KEEP ALIVE LOGIC ---
-const PING_INTERVAL = 14 * 60 * 1000; // 14 minutes
-// Use an environment variable for the URL so it doesn't ping localhost or old names
-const SERVER_URL = process.env.BACKEND_URL || "https://your-actual-render-app-name.onrender.com/health-check";
+const PING_INTERVAL = 14 * 60 * 1000; 
+const SERVER_URL = process.env.BACKEND_URL || "https://denyo-world-project.onrender.com/health-check";
 
 function keepAlive() {
-  // Only ping if we are actually on Render (production)
   if (process.env.NODE_ENV === "production") {
     setInterval(async () => {
       try {
@@ -83,8 +77,6 @@ function keepAlive() {
         console.error(`Self-ping failed: ${error.message}`);
       }
     }, PING_INTERVAL);
-  } else {
-    console.log("Local development detected: Self-ping skipped.");
   }
 }
 
