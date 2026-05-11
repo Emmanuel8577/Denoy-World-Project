@@ -17,22 +17,42 @@ ConnectDB();
 ConnectCloudinary();
 
 // 1. BROAD CORS (The "I'm Tired" Version)
-app.use(cors()); 
+const allowedOrigins = [
+  'https://denoy-connect.vercel.app',
+  'https://denoy-connect-admin.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+// THE "AGGRESSIVE" SHIELD
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  const origin = req.headers.origin;
+
+  // If the request comes from one of your Vercel sites
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    // Fallback for debugging - allows the preflight to pass
+    res.setHeader('Access-Control-Allow-Origin', '*'); 
+  }
+
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Authorization, Accept, Origin');
+
+  // CRITICAL: Handle the "Preflight" (OPTIONS) immediately
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+    return res.status(200).end();
   }
   next();
 });
 
-// 2. LOGGING (Check your Render logs for these!)
-app.use((req, res, next) => {
-  console.log(`🚀 ${req.method} request to: ${req.url}`);
-  next();
-});
+// Standard CORS as a backup
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
