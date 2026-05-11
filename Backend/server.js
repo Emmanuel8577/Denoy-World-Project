@@ -16,6 +16,7 @@ const port = process.env.PORT || 4000;
 ConnectDB();
 ConnectCloudinary();
 
+// 1. Define the "Safe List"
 const allowedOrigins = [
   'https://denoy-connect.vercel.app',
   'https://denoy-connect-admin.vercel.app',
@@ -23,30 +24,33 @@ const allowedOrigins = [
   'http://localhost:3000'
 ];
 
-// 1. Simplified CORS Middleware
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// 2. Manual Pre-flight/Handshake Handler
-// This ensures that 'OPTIONS' requests from the browser always get a green light.
+// 2. THE MANUAL CORS SHIELD
+// This runs BEFORE the cors middleware to ensure headers are ALWAYS present
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   
-  if (req.method === 'OPTIONS') {
-    return res.status(200).json({});
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
   }
+  
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+
+  // 3. THE PREFLIGHT KILLER
+  // If the browser is just "checking in" with OPTIONS, answer 200 OK immediately
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   next();
 });
+
+// Keep the standard cors package as a backup
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
