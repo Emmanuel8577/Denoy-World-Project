@@ -16,41 +16,23 @@ const port = process.env.PORT || 4000;
 ConnectDB();
 ConnectCloudinary();
 
-// 1. Define the "Safe List"
-const allowedOrigins = [
-  'https://denoy-connect.vercel.app',
-  'https://denoy-connect-admin.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3000'
-];
-
-// 2. THE MANUAL CORS SHIELD
-// This runs BEFORE the cors middleware to ensure headers are ALWAYS present
+// 1. BROAD CORS (The "I'm Tired" Version)
+app.use(cors()); 
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-
-  // 3. THE PREFLIGHT KILLER
-  // If the browser is just "checking in" with OPTIONS, answer 200 OK immediately
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.sendStatus(200);
   }
-  
   next();
 });
 
-// Keep the standard cors package as a backup
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+// 2. LOGGING (Check your Render logs for these!)
+app.use((req, res, next) => {
+  console.log(`🚀 ${req.method} request to: ${req.url}`);
+  next();
+});
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
