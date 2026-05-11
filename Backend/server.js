@@ -13,11 +13,8 @@ import adminRouter from './routes/adminRoutes.js';
 const app = express();
 const port = process.env.PORT || 4000;
 
-// Initialize Configs
 ConnectDB();
 ConnectCloudinary();
-
-// 1. REMOVED the "const cors = require('cors')" line that was here
 
 const allowedOrigins = [
   'https://denoy-connect.vercel.app',
@@ -26,23 +23,30 @@ const allowedOrigins = [
   'http://localhost:3000'
 ];
 
-// 2. USE the cors import already declared at the top
+// 1. Simplified CORS Middleware
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log("CORS blocked for origin:", origin); 
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// 2. Manual Pre-flight/Handshake Handler
+// This ensures that 'OPTIONS' requests from the browser always get a green light.
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).json({});
+  }
+  next();
+});
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
