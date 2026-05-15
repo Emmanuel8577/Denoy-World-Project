@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, EffectFade } from "swiper/modules";
 import { Badge } from "@/components/ui/badge";
@@ -14,15 +14,14 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 
-// UPDATED WITH YOUR LIVE CLOUDINARY LINKS
+// LIVE CLOUDINARY LINKS
 const CLOUDINARY_VIDEOS = {
   english: "https://res.cloudinary.com/dg4vwrzho/video/upload/v1778450891/english_nragme.mp4",
-  tiv: "https://res.cloudinary.com/dg4vwrzho/video/upload/v1778450887/tiv_ljjvak.mp4",
   hausa: "https://res.cloudinary.com/dg4vwrzho/video/upload/v1778450884/hausa_c9e2jm.mp4"
 };
 
 const FeaturedProject = () => {
-  const [activeLang, setActiveLang] = useState("Hausa");
+  const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   
@@ -31,32 +30,44 @@ const FeaturedProject = () => {
   const videoSlides = [
     { lang: "English", src: CLOUDINARY_VIDEOS.english },
     { lang: "Hausa", src: CLOUDINARY_VIDEOS.hausa },
-    { lang: "Tiv", src: CLOUDINARY_VIDEOS.tiv },
     { lang: "French", src: null },
   ];
 
   const features = [
-    { icon: <Globe2 size={22} />, title: "Indigenous Expertise", desc: "Immersion in native dialects including Tiv, Idoma, and Hausa." },
+    { icon: <Globe2 size={22} />, title: "Indigenous Expertise", desc: "Immersion in native dialects including Hausa and Idoma." },
     { icon: <CheckCircle2 size={22} />, title: "Cultural Fidelity", desc: "Our process adapts idioms to make messages feel local." },
     { icon: <Zap size={22} />, title: "Rapid Deployment", desc: "Agile workflows for digital sensitized apps." },
     { icon: <MessageSquare size={22} />, title: "Audience Resonance", desc: "Ensuring messages trigger the intended response." }
   ];
 
-  const togglePlay = () => {
-    videoRefs.current.forEach(video => {
-      if (video) {
-        isPlaying ? video.pause() : video.play();
+  // Logic to handle Play/Pause and Mute specifically for the visible slide
+  useEffect(() => {
+    videoRefs.current.forEach((video, index) => {
+      if (!video) return;
+
+      if (index === activeIndex) {
+        video.muted = isMuted;
+        if (isPlaying) {
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              // If browser blocks autoplay, sync state
+              setIsPlaying(false);
+            });
+          }
+        } else {
+          video.pause();
+        }
+      } else {
+        // Stop and mute all background videos
+        video.pause();
+        video.muted = true;
       }
     });
-    setIsPlaying(!isPlaying);
-  };
+  }, [activeIndex, isPlaying, isMuted]);
 
-  const toggleMute = () => {
-    videoRefs.current.forEach(video => {
-      if (video) video.muted = !isMuted;
-    });
-    setIsMuted(!isMuted);
-  };
+  const togglePlay = () => setIsPlaying((prev) => !prev);
+  const toggleMute = () => setIsMuted((prev) => !prev);
 
   return (
     <section id="showcase" className="relative py-24 md:py-40 bg-slate-50 overflow-hidden">
@@ -88,7 +99,7 @@ const FeaturedProject = () => {
             </h2>
             
             <p className="text-xl text-slate-500 mb-12 leading-relaxed font-medium">
-              We don't just translate words; we translate experiences. Our deployment across Nigeria's complex landscape ensures precision and deep cultural resonance.
+              We don't just translate words; we translate experiences. Our deployment across Nigeria's landscape ensures precision and deep cultural resonance.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12">
@@ -117,7 +128,7 @@ const FeaturedProject = () => {
           >
             <div className="relative w-full max-w-[400px]">
                 
-                {/* FLOATING MEDIA CONTROLS */}
+                {/* MEDIA CONTROLS */}
                 <div className="absolute -left-6 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-3">
                     <button 
                         onClick={togglePlay}
@@ -141,7 +152,9 @@ const FeaturedProject = () => {
                             nextEl: ".btn-next",
                             prevEl: ".btn-prev",
                         }}
-                        onSlideChange={(swiper) => setActiveLang(videoSlides[swiper.activeIndex].lang)}
+                        onSlideChange={(swiper) => {
+                          setActiveIndex(swiper.activeIndex);
+                        }}
                         pagination={{ clickable: true }}
                         className="w-full h-full"
                     >
@@ -151,9 +164,7 @@ const FeaturedProject = () => {
                                 {video.src ? (
                                     <video 
                                         ref={el => videoRefs.current[index] = el}
-                                        autoPlay 
                                         loop 
-                                        muted={isMuted}
                                         playsInline
                                         className="w-full h-full object-cover opacity-80"
                                     >
@@ -165,6 +176,7 @@ const FeaturedProject = () => {
                                     </div>
                                 )}
                                 
+                                {/* Overlay to catch clicks for play/pause toggle */}
                                 <div 
                                     onClick={togglePlay}
                                     className="absolute inset-0 z-30 cursor-pointer" 

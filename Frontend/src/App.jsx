@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 
 // Import UI Components
 import Navbar from "./components/Navbar";
@@ -15,21 +16,32 @@ import MapSection from "./components/MapSection";
 // Import Pages
 import AdminDashboard from "./pages/AdminDashboard"; 
 import UserProfile from "./pages/Profile";
-import Auth from "./pages/Auth"; // Your new unified Auth page
+import Auth from "./pages/Auth";
+import About from "./components/AboutHero"; // The full About Page we discussed
+import ServicesPage from "./pages/ServicesPage"; // Dedicated Services Page
+import ImpactPage from "./pages/ImpactPage"; // Dedicated Impact Page
+import ContactPage from "./pages/ContactPage";
+import AboutHero from "./components/AboutHero";
+import AboutPage from "./pages/AboutPage";
 
-// Define the LandingPage wrapper
+// Scroll to Top Helper: Ensures new pages load at the top
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
+
+// Landing Page: Home, Showcase (FeaturedProject), and Coverage
 const LandingPage = () => (
   <SmoothScroll>
-    <Navbar />
     <main className="w-full">
       <Hero />
-      <Services />
       <FeaturedProject />
       <Coverage />
       <MapSection />
-      <Impact />
       <ContactCTA />
-      <Footer />
     </main>
   </SmoothScroll>
 );
@@ -37,21 +49,26 @@ const LandingPage = () => (
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
-  if (!token) {
-    return <Navigate to="/Auth" replace />;
-  }
-  return children;
+  return token ? children : <Navigate to="/Auth" replace />;
 };
 
 function App() {
   return (
     <Router>
+      <ScrollToTop />
+      <Navbar /> 
       <Routes>
+        {/* Main Home Route */}
         <Route path="/" element={<LandingPage />} />
         
-        {/* Auth handles both Login and Signup */}
-        <Route path="/Auth" element={<Auth />} />
+        {/* Dedicated Internal Pages */}
+        <Route path="/about" element={<AboutPage/>} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/impact" element={<ImpactPage />} />
+        <Route path="/contact" element={<ContactPage/>} />
         
+        {/* Auth & User Routes */}
+        <Route path="/Auth" element={<Auth />} />
         <Route 
           path="/Profile" 
           element={
@@ -60,9 +77,9 @@ function App() {
             </ProtectedRoute>
           } 
         />
-
         <Route path="/adminDashboard" element={<AdminDashboard />} />
       </Routes>
+      <Footer />
     </Router>
   );
 }
